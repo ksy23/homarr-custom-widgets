@@ -98,3 +98,9 @@ Open the widget's settings while in board **Edit Mode** to configure defaults th
 | :--- | :--- | :--- |
 | **Default Sort Column** | Column to sort by on load (`server`, `friendly_name`, `ip`, `received_bytes`, `sent_bytes`, `latest_handshake`) | `latest_handshake` |
 | **Default Sort Order** | Sort direction on load (`asc` or `desc`) | `desc` |
+
+---
+
+## Screenshot
+
+![Wireguard Peer List](wireguard-peer-list.png)

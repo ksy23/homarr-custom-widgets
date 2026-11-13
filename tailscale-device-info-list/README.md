@@ -58,6 +58,12 @@ Open the widget's settings while in board **Edit Mode** to set your persistent d
 
 ---
 
+## Screenshot
+
+![Tailscale Device List](tailscale-device-info-list.png)
+
+---
+
 ## Troubleshooting
 
 * **`last_seen` shows `-` for all devices:** Depending on your exporter version or Tailscale API behavior, the `last_seen` metric may join on `name` or `hostname` instead of `id`. Open the widget's **Requests** tab in Homarr and update `on(id)` in the PromQL query to `on(name)` or `on(hostname)`.
