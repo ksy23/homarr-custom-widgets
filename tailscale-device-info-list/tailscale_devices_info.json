@@ -1,0 +1,46 @@
+{
+  "$schema": "homarr-custom-widget-v2",
+  "name": "Tailscale Devices Info (Table)",
+  "description": "Displays hostname, name, client_version, os, tailscale_ip, and color-coded last_seen badges with live and persistent sorting.",
+  "iconUrl": "https://jsdelivr.net",
+  "sources": {
+    "default": {
+      "type": "http",
+      "name": "Prometheus",
+      "baseUrl": "http://prometheus:9090",
+      "networkScope": "private",
+      "auth": "none"
+    }
+  },
+  "requests": {
+    "devices": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": {
+        "query": "tailscale_devices_info * on(id) group_left() {__name__=~\"tailscale_devices?_last_seen.*\"} or tailscale_devices_info"
+      },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    }
+  },
+  "options": {
+    "defaultSortBy": {
+      "label": "Default Sort Column",
+      "description": "Persistent sort column on page load (hostname, name, client_version, os, tailscale_ip, or last_seen).",
+      "control": "text",
+      "default": "last_seen"
+    },
+    "defaultSortOrder": {
+      "label": "Default Sort Order",
+      "description": "Persistent sort direction on page load (asc or desc).",
+      "control": "text",
+      "default": "desc"
+    }
+  },
+  "template": "<Stack gap=\"xs\" p=\"xs\" style={{ height: \"100%\", overflow: \"hidden\" }}><Group justify=\"space-between\" wrap=\"wrap\" gap=\"xs\"><Group gap={6} wrap=\"nowrap\"><TablerIcon name=\"network\" size={18} /><Text fw={700} size=\"md\">Tailscale Devices</Text><Badge variant=\"light\" color=\"blue\" size=\"sm\">{(data.devices?.data?.result ?? []).length}</Badge></Group><Group gap={6} wrap=\"nowrap\"><Select bind=\"sortBy\" defaultValue={options.defaultSortBy || \"last_seen\"} size=\"xs\" w={135} allowDeselect={false} data={[\"hostname\", \"name\", \"client_version\", \"os\", \"tailscale_ip\", \"last_seen\"]} /><SegmentedControl bind=\"sortOrder\" defaultValue={options.defaultSortOrder || \"desc\"} size=\"xs\" data={[\"asc\", \"desc\"]} /><RefreshButton requestId=\"devices\" size=\"xs\" /></Group></Group>{status.devices?.ok === false ? (<Text size=\"sm\" c=\"red\">Failed to query Prometheus. Check your source URL and network scope.</Text>) : !data.devices ? (<Text size=\"sm\" c=\"dimmed\">Loading Tailscale devices...</Text>) : (data.devices?.data?.result ?? []).length === 0 ? (<Text size=\"sm\" c=\"dimmed\">No data returned for tailscale_devices_info.</Text>) : (<ScrollArea scrollbars=\"xy\" type=\"auto\" offsetScrollbars style={{ flex: 1 }}><Table striped highlightOnHover withTableBorder withColumnBorders verticalSpacing={6} horizontalSpacing=\"sm\" style={{ fontSize: \"14px\", whiteSpace: \"nowrap\" }}><Table.Thead><Table.Tr><Table.Th>hostname {(inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\") === \"hostname\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>name {(inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\") === \"name\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>client_version {(inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\") === \"client_version\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>os {(inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\") === \"os\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>tailscale_ip {(inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\") === \"tailscale_ip\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>last_seen {(inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\") === \"last_seen\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{(data.devices?.data?.result ?? []).map((item, idx) => ({ id: item.metric?.id || item.metric?.node_id || item.metric?.hostname || item.metric?.name || idx, hostname: item.metric?.hostname ?? \"-\", name: item.metric?.name ?? \"-\", client_version: item.metric?.client_version ?? \"-\", os: item.metric?.os ?? \"-\", tailscale_ip: item.metric?.tailscale_ip ?? item.metric?.address ?? item.metric?.ipv4 ?? \"-\", lastSeenRaw: Number(item.value?.at(1) ?? 0), ageSec: Number(item.value?.at(1) ?? 0) > 1 ? Math.max(0, Math.floor(Date.now() / 1000) - Number(item.value?.at(1))) : -1 })).sort((a, b) => ((inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\") === \"last_seen\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? a.lastSeenRaw - b.lastSeenRaw : b.lastSeenRaw - a.lastSeenRaw) : ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? String(a[inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\"]).localeCompare(String(b[inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\"]), undefined, { numeric: true }) : String(b[inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\"]).localeCompare(String(a[inputs.sortBy ?? options.defaultSortBy ?? \"last_seen\"]), undefined, { numeric: true })))).map((row) => (<Table.Tr key={row.id}><Table.Td>{row.hostname}</Table.Td><Table.Td>{row.name}</Table.Td><Table.Td>{row.client_version}</Table.Td><Table.Td>{row.os}</Table.Td><Table.Td>{row.tailscale_ip}</Table.Td><Table.Td>{row.ageSec < 0 ? (<Badge variant=\"light\" color=\"gray\" size=\"sm\">-</Badge>) : (<Badge variant=\"dot\" color={row.ageSec < 300 ? \"green\" : row.ageSec < 3600 ? \"yellow\" : \"gray\"} size=\"sm\">{row.ageSec < 60 ? \"Just now\" : row.ageSec < 3600 ? Math.floor(row.ageSec / 60) + \"m ago\" : row.ageSec < 86400 ? Math.floor(row.ageSec / 3600) + \"h ago\" : Math.floor(row.ageSec / 86400) + \"d ago\"}</Badge>)}</Table.Td></Table.Tr>))}</Table.Tbody></Table></ScrollArea>)}</Stack>"
+}
+

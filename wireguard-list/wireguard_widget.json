@@ -1,0 +1,72 @@
+{
+  "$schema": "homarr-custom-widget-v2",
+  "name": "WireGuard Peers (Multi-Server)",
+  "description": "Displays server, friendly_name, ip, received_bytes, sent_bytes, and color-coded latest_handshake across multiple WireGuard servers.",
+  "iconUrl": "https://jsdelivr.net",
+  "sources": {
+    "default": {
+      "type": "http",
+      "name": "Prometheus",
+      "baseUrl": "http://prometheus:9090",
+      "networkScope": "private",
+      "auth": "none"
+    }
+  },
+  "requests": {
+    "handshake": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": {
+        "query": "wireguard_latest_handshake_seconds"
+      },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    },
+    "rx": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": {
+        "query": "wireguard_received_bytes_total"
+      },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    },
+    "tx": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": {
+        "query": "wireguard_sent_bytes_total"
+      },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    }
+  },
+  "options": {
+    "defaultSortBy": {
+      "label": "Default Sort Column",
+      "description": "Persistent sort column on page load (server, friendly_name, ip, received_bytes, sent_bytes, or latest_handshake).",
+      "control": "text",
+      "default": "latest_handshake"
+    },
+    "defaultSortOrder": {
+      "label": "Default Sort Order",
+      "description": "Persistent sort direction on page load (asc or desc).",
+      "control": "text",
+      "default": "desc"
+    }
+  },
+  "template": "<Stack gap=\"xs\" p=\"xs\" style={{ height: \"100%\", overflow: \"hidden\" }}><Group justify=\"space-between\" wrap=\"wrap\" gap=\"xs\"><Group gap={6} wrap=\"nowrap\"><TablerIcon name=\"shield-lock\" size={18} /><Text fw={700} size=\"md\">WireGuard Peers</Text><Badge variant=\"light\" color=\"blue\" size=\"sm\">{(data.handshake?.data?.result ?? []).length}</Badge></Group><Group gap={6} wrap=\"nowrap\"><Select bind=\"sortBy\" defaultValue={options.defaultSortBy || \"latest_handshake\"} size=\"xs\" w={155} allowDeselect={false} data={[\"server\", \"friendly_name\", \"ip\", \"received_bytes\", \"sent_bytes\", \"latest_handshake\"]} /><SegmentedControl bind=\"sortOrder\" defaultValue={options.defaultSortOrder || \"desc\"} size=\"xs\" data={[\"asc\", \"desc\"]} /><RefreshButton requestId=\"handshake\" size=\"xs\" /></Group></Group>{status.handshake?.ok === false ? (<Text size=\"sm\" c=\"red\">Failed to query Prometheus. Check your source URL and network scope.</Text>) : !data.handshake ? (<Text size=\"sm\" c=\"dimmed\">Loading WireGuard peers...</Text>) : (data.handshake?.data?.result ?? []).length === 0 ? (<Text size=\"sm\" c=\"dimmed\">No data returned for wireguard_latest_handshake_seconds.</Text>) : (<ScrollArea scrollbars=\"xy\" type=\"auto\" offsetScrollbars style={{ flex: 1 }}><Table striped highlightOnHover withTableBorder withColumnBorders verticalSpacing={6} horizontalSpacing=\"sm\" style={{ fontSize: \"14px\", whiteSpace: \"nowrap\" }}><Table.Thead><Table.Tr><Table.Th>server {(inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\") === \"server\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>friendly_name {(inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\") === \"friendly_name\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>ip {(inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\") === \"ip\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>received_bytes {(inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\") === \"received_bytes\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>sent_bytes {(inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\") === \"sent_bytes\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>latest_handshake {(inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\") === \"latest_handshake\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{(data.handshake?.data?.result ?? []).map((item, idx) => ({ id: (item.metric?.instance || \"\") + \"-\" + (item.metric?.public_key || item.metric?.friendly_name || idx), server: item.metric?.server || (item.metric?.instance || \"Unknown\").split(\":\").at(0), friendly_name: item.metric?.friendly_name || (item.metric?.public_key ? item.metric.public_key.slice(0, 12) + \"...\" : \"Unknown\"), ip: (item.metric?.allowed_ips || \"-\").replace(\"/32\", \"\"), received_bytes: Number((data.rx?.data?.result ?? []).find((r) => r.metric?.public_key === item.metric?.public_key && r.metric?.instance === item.metric?.instance)?.value?.at(1) ?? 0), sent_bytes: Number((data.tx?.data?.result ?? []).find((t) => t.metric?.public_key === item.metric?.public_key && t.metric?.instance === item.metric?.instance)?.value?.at(1) ?? 0), hsRaw: Number(item.value?.at(1) ?? 0), ageSec: Number(item.value?.at(1) ?? 0) > 0 ? Math.max(0, Math.floor(Date.now() / 1000) - Number(item.value?.at(1))) : -1 })).sort((a, b) => ((inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\") === \"latest_handshake\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? a.hsRaw - b.hsRaw : b.hsRaw - a.hsRaw) : (inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\") === \"received_bytes\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? a.received_bytes - b.received_bytes : b.received_bytes - a.received_bytes) : (inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\") === \"sent_bytes\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? a.sent_bytes - b.sent_bytes : b.sent_bytes - a.sent_bytes) : ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? String(a[inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\"]).localeCompare(String(b[inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\"]), undefined, { numeric: true }) : String(b[inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\"]).localeCompare(String(a[inputs.sortBy ?? options.defaultSortBy ?? \"latest_handshake\"]), undefined, { numeric: true })))).map((row) => (<Table.Tr key={row.id}><Table.Td><Badge variant=\"light\" color=\"indigo\" size=\"sm\">{row.server}</Badge></Table.Td><Table.Td>{row.friendly_name}</Table.Td><Table.Td>{row.ip}</Table.Td><Table.Td>{row.received_bytes >= 1073741824 ? (row.received_bytes / 1073741824).toFixed(2) + \" GB\" : row.received_bytes >= 1048576 ? (row.received_bytes / 1048576).toFixed(2) + \" MB\" : row.received_bytes >= 1024 ? (row.received_bytes / 1024).toFixed(1) + \" KB\" : row.received_bytes + \" B\"}</Table.Td><Table.Td>{row.sent_bytes >= 1073741824 ? (row.sent_bytes / 1073741824).toFixed(2) + \" GB\" : row.sent_bytes >= 1048576 ? (row.sent_bytes / 1048576).toFixed(2) + \" MB\" : row.sent_bytes >= 1024 ? (row.sent_bytes / 1024).toFixed(1) + \" KB\" : row.sent_bytes + \" B\"}</Table.Td><Table.Td>{row.ageSec < 0 ? (<Badge variant=\"light\" color=\"gray\" size=\"sm\">Never</Badge>) : (<Badge variant=\"dot\" color={row.ageSec < 180 ? \"green\" : row.ageSec < 3600 ? \"yellow\" : \"gray\"} size=\"sm\">{row.ageSec < 60 ? \"Just now\" : row.ageSec < 3600 ? Math.floor(row.ageSec / 60) + \"m ago\" : row.ageSec < 86400 ? Math.floor(row.ageSec / 3600) + \"h ago\" : Math.floor(row.ageSec / 86400) + \"d ago\"}</Badge>)}</Table.Td></Table.Tr>))}</Table.Tbody></Table></ScrollArea>)}</Stack>"
+}
+
