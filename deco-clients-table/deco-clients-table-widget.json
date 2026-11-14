@@ -1,0 +1,58 @@
+{
+  "$schema": "homarr-custom-widget-v2",
+  "name": "TP-Link Deco Connected Clients (Table)",
+  "description": "Optimized Deco client table displaying name, IP, Wi-Fi band, live Rx/Tx speed, and status under Homarr's 25k operation limit.",
+  "iconUrl": "https://cdn.jsdelivr.net/gh/loganmarchione/homelab-svg-assets//assets/tplink.svg",
+  "sources": {
+    "default": {
+      "type": "http",
+      "name": "Prometheus",
+      "baseUrl": "http://prometheus:9090",
+      "networkScope": "private",
+      "auth": "none"
+    }
+  },
+  "requests": {
+    "rxClients": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": {
+        "query": "deco_client_info * on(mac) group_left() deco_client_rx_bytes_per_second"
+      },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    },
+    "txOnly": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": {
+        "query": "deco_client_tx_bytes_per_second"
+      },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    }
+  },
+  "options": {
+    "defaultSortBy": {
+      "label": "Default Sort Column",
+      "description": "Persistent sort column on page load (name, ip, connection_type, rx_speed, tx_speed, or status).",
+      "control": "text",
+      "default": "rx_speed"
+    },
+    "defaultSortOrder": {
+      "label": "Default Sort Order",
+      "description": "Persistent sort direction on page load (asc or desc).",
+      "control": "text",
+      "default": "desc"
+    }
+  },
+  "template": "<Stack gap=\"xs\" p=\"xs\" style={{ height: \"100%\", overflow: \"hidden\" }}><Group justify=\"space-between\" wrap=\"wrap\" gap=\"xs\"><Group gap={6} wrap=\"nowrap\"><TablerIcon name=\"devices\" size={18} /><Text fw={700} size=\"md\">Deco Clients</Text><Badge variant=\"light\" color=\"blue\" size=\"sm\">{(data.rxClients?.data?.result ?? []).length}</Badge></Group><Group gap={6} wrap=\"nowrap\"><Select bind=\"sortBy\" defaultValue={options.defaultSortBy || \"rx_speed\"} size=\"xs\" w={145} allowDeselect={false} data={[\"name\", \"ip\", \"connection_type\", \"rx_speed\", \"tx_speed\", \"status\"]} /><SegmentedControl bind=\"sortOrder\" defaultValue={options.defaultSortOrder || \"desc\"} size=\"xs\" data={[\"asc\", \"desc\"]} /><RefreshButton requestId=\"rxClients\" size=\"xs\" /></Group></Group>{status.rxClients?.ok === false ? (<Text size=\"sm\" c=\"red\">Failed to query Prometheus.</Text>) : !data.rxClients ? (<Text size=\"sm\" c=\"dimmed\">Loading Deco clients...</Text>) : (<ScrollArea scrollbars=\"xy\" type=\"auto\" offsetScrollbars style={{ flex: 1 }}><Table striped highlightOnHover withTableBorder withColumnBorders verticalSpacing={6} horizontalSpacing=\"sm\" style={{ fontSize: \"14px\", whiteSpace: \"nowrap\" }}><Table.Thead><Table.Tr><Table.Th>name</Table.Th><Table.Th>ip</Table.Th><Table.Th>band</Table.Th><Table.Th>rx_speed</Table.Th><Table.Th>tx_speed</Table.Th><Table.Th>status</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{(data.rxClients?.data?.result ?? []).map((item, idx) => ({ id: item.metric?.mac || idx, name: item.metric?.name || item.metric?.mac || \"Unknown\", ip: item.metric?.ip || \"-\", connection_type: item.metric?.connection_type || \"unknown\", rx_speed: Number(item.value?.at(1) ?? 0), tx_speed: Number(data.txOnly?.data?.result?.at(idx)?.value?.at(1) ?? 0), status: item.metric?.online === \"true\" ? \"Online\" : \"Offline\" })).sort((a, b) => ((inputs.sortBy ?? options.defaultSortBy ?? \"rx_speed\") === \"rx_speed\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? a.rx_speed - b.rx_speed : b.rx_speed - a.rx_speed) : (inputs.sortBy ?? options.defaultSortBy ?? \"rx_speed\") === \"tx_speed\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? a.tx_speed - b.tx_speed : b.tx_speed - a.tx_speed) : ((inputs.sortOrder ?? options.defaultSortOrder ?? \"desc\") === \"asc\" ? (a[inputs.sortBy ?? options.defaultSortBy ?? \"rx_speed\"] > b[inputs.sortBy ?? options.defaultSortBy ?? \"rx_speed\"] ? 1 : -1) : (a[inputs.sortBy ?? options.defaultSortBy ?? \"rx_speed\"] < b[inputs.sortBy ?? options.defaultSortBy ?? \"rx_speed\"] ? 1 : -1)))).map((row) => (<Table.Tr key={row.id}><Table.Td>{row.name}</Table.Td><Table.Td>{row.ip}</Table.Td><Table.Td><Badge variant=\"light\" color={row.connection_type === \"band6\" ? \"violet\" : row.connection_type === \"band5\" ? \"blue\" : row.connection_type === \"band2_4\" ? \"teal\" : \"gray\"} size=\"sm\">{row.connection_type === \"band6\" ? \"6 GHz\" : row.connection_type === \"band5\" ? \"5 GHz\" : row.connection_type === \"band2_4\" ? \"2.4 GHz\" : row.connection_type}</Badge></Table.Td><Table.Td>{row.rx_speed >= 1048576 ? (row.rx_speed / 1048576).toFixed(2) + \" MB/s\" : row.rx_speed >= 1024 ? (row.rx_speed / 1024).toFixed(1) + \" KB/s\" : Math.round(row.rx_speed) + \" B/s\"}</Table.Td><Table.Td>{row.tx_speed >= 1048576 ? (row.tx_speed / 1048576).toFixed(2) + \" MB/s\" : row.tx_speed >= 1024 ? (row.tx_speed / 1024).toFixed(1) + \" KB/s\" : Math.round(row.tx_speed) + \" B/s\"}</Table.Td><Table.Td><Badge variant=\"dot\" color={row.status === \"Online\" ? \"green\" : \"gray\"} size=\"sm\">{row.status}</Badge></Table.Td></Table.Tr>))}</Table.Tbody></Table></ScrollArea>)}</Stack>"
+}

@@ -1,0 +1,87 @@
+{
+  "$schema": "homarr-custom-widget-v2",
+  "name": "TP-Link Deco Mesh Nodes (Table)",
+  "description": "Displays Deco BE11000 mesh node names, master/satellite role, IP, backhaul band, connected clients, signal strength, and status.",
+  "iconUrl": "https://cdn.jsdelivr.net/gh/loganmarchione/homelab-svg-assets//assets/tplink.svg",
+  "sources": {
+    "default": {
+      "type": "http",
+      "name": "Prometheus",
+      "baseUrl": "http://prometheus:9090",
+      "networkScope": "private",
+      "auth": "none"
+    }
+  },
+  "requests": {
+    "nodes": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": { "query": "deco_device_info" },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    },
+    "nodeOnline": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": { "query": "deco_node_online" },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    },
+    "nodeClients": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": { "query": "deco_node_clients_total" },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    },
+    "sig2g": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": { "query": "deco_node_signal_2g" },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    },
+    "sig5g": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": { "query": "deco_node_signal_5g" },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 30
+    }
+  },
+  "options": {
+    "defaultSortBy": {
+      "label": "Default Sort Column",
+      "description": "Persistent sort column on page load (name, role, ip, clients, or status).",
+      "control": "text",
+      "default": "role"
+    },
+    "defaultSortOrder": {
+      "label": "Default Sort Order",
+      "description": "Persistent sort direction on page load (asc or desc).",
+      "control": "text",
+      "default": "asc"
+    }
+  },
+  "template": "<Stack gap=\"xs\" p=\"xs\" style={{ height: \"100%\", overflow: \"hidden\" }}><Group justify=\"space-between\" wrap=\"wrap\" gap=\"xs\"><Group gap={6} wrap=\"nowrap\"><TablerIcon name=\"access-point\" size={18} /><Text fw={700} size=\"md\">Deco Mesh Nodes</Text><Badge variant=\"light\" color=\"blue\" size=\"sm\">{(data.nodes?.data?.result ?? []).length}</Badge></Group><Group gap={6} wrap=\"nowrap\"><Select bind=\"sortBy\" defaultValue={options.defaultSortBy || \"role\"} size=\"xs\" w={125} allowDeselect={false} data={[\"name\", \"role\", \"ip\", \"clients\", \"status\"]} /><SegmentedControl bind=\"sortOrder\" defaultValue={options.defaultSortOrder || \"asc\"} size=\"xs\" data={[\"asc\", \"desc\"]} /><RefreshButton requestId=\"nodes\" size=\"xs\" /></Group></Group>{status.nodes?.ok === false ? (<Text size=\"sm\" c=\"red\">Failed to query Prometheus. Check your source URL and network scope.</Text>) : !data.nodes ? (<Text size=\"sm\" c=\"dimmed\">Loading Deco mesh nodes...</Text>) : (data.nodes?.data?.result ?? []).length === 0 ? (<Text size=\"sm\" c=\"dimmed\">No data returned for deco_device_info.</Text>) : (<ScrollArea scrollbars=\"xy\" type=\"auto\" offsetScrollbars style={{ flex: 1 }}><Table striped highlightOnHover withTableBorder withColumnBorders verticalSpacing={6} horizontalSpacing=\"sm\" style={{ fontSize: \"14px\", whiteSpace: \"nowrap\" }}><Table.Thead><Table.Tr><Table.Th>name {(inputs.sortBy ?? options.defaultSortBy ?? \"role\") === \"name\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"asc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>role {(inputs.sortBy ?? options.defaultSortBy ?? \"role\") === \"role\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"asc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>ip {(inputs.sortBy ?? options.defaultSortBy ?? \"role\") === \"ip\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"asc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>backhaul</Table.Th><Table.Th>clients {(inputs.sortBy ?? options.defaultSortBy ?? \"role\") === \"clients\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"asc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th><Table.Th>signal (2G / 5G)</Table.Th><Table.Th>status {(inputs.sortBy ?? options.defaultSortBy ?? \"role\") === \"status\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"asc\") === \"asc\" ? \"▲\" : \"▼\") : \"\"}</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{(data.nodes?.data?.result ?? []).map((item, idx) => ({ id: item.metric?.mac || item.metric?.name || idx, name: item.metric?.name || \"Unknown\", role: item.metric?.master === \"true\" ? \"Main\" : \"Satellite\", ip: item.metric?.ip || \"-\", backhaul: item.metric?.master === \"true\" ? \"Primary\" : (item.metric?.connection_type || \"-\"), clients: Math.round(Number((data.nodeClients?.data?.result ?? []).find((c) => c.metric?.name === item.metric?.name || c.metric?.mac === item.metric?.mac)?.value?.at(1) ?? 0)), s2: (data.sig2g?.data?.result ?? []).find((s) => s.metric?.name === item.metric?.name || s.metric?.mac === item.metric?.mac)?.value?.at(1) ?? \"-\", s5: (data.sig5g?.data?.result ?? []).find((s) => s.metric?.name === item.metric?.name || s.metric?.mac === item.metric?.mac)?.value?.at(1) ?? \"-\", status: Number((data.nodeOnline?.data?.result ?? []).find((o) => o.metric?.name === item.metric?.name || o.metric?.mac === item.metric?.mac)?.value?.at(1) ?? 1) === 1 ? \"Online\" : \"Offline\" })).sort((a, b) => ((inputs.sortBy ?? options.defaultSortBy ?? \"role\") === \"clients\" ? ((inputs.sortOrder ?? options.defaultSortOrder ?? \"asc\") === \"asc\" ? a.clients - b.clients : b.clients - a.clients) : ((inputs.sortOrder ?? options.defaultSortOrder ?? \"asc\") === \"asc\" ? String(a[inputs.sortBy ?? options.defaultSortBy ?? \"role\"]).localeCompare(String(b[inputs.sortBy ?? options.defaultSortBy ?? \"role\"]), undefined, { numeric: true }) : String(b[inputs.sortBy ?? options.defaultSortBy ?? \"role\"]).localeCompare(String(a[inputs.sortBy ?? options.defaultSortBy ?? \"role\"]), undefined, { numeric: true })))).map((row) => (<Table.Tr key={row.id}><Table.Td>{row.name}</Table.Td><Table.Td><Badge variant=\"light\" color={row.role === \"Main\" ? \"indigo\" : \"cyan\"} size=\"sm\">{row.role}</Badge></Table.Td><Table.Td>{row.ip}</Table.Td><Table.Td>{row.backhaul}</Table.Td><Table.Td>{row.clients}</Table.Td><Table.Td>{row.s2} / {row.s5}</Table.Td><Table.Td><Badge variant=\"dot\" color={row.status === \"Online\" ? \"green\" : \"red\"} size=\"sm\">{row.status}</Badge></Table.Td></Table.Tr>))}</Table.Tbody></Table></ScrollArea>)}</Stack>"
+}
