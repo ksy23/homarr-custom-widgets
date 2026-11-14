@@ -2,7 +2,7 @@
   "$schema": "homarr-custom-widget-v2",
   "name": "WireGuard Peers (Multi-Server)",
   "description": "Displays server, friendly_name, ip, received_bytes, sent_bytes, and color-coded latest_handshake across multiple WireGuard servers.",
-  "iconUrl": "https://jsdelivr.net",
+  "iconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/wireguard.svg",
   "sources": {
     "default": {
       "type": "http",

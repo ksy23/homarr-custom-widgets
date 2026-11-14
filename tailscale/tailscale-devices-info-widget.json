@@ -2,7 +2,7 @@
   "$schema": "homarr-custom-widget-v2",
   "name": "Tailscale Devices Info (Table)",
   "description": "Displays hostname, name, client_version, os, tailscale_ip, and color-coded last_seen badges with live and persistent sorting.",
-  "iconUrl": "https://jsdelivr.net",
+  "iconUrl": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/tailscale.svg",
   "sources": {
     "default": {
       "type": "http",
