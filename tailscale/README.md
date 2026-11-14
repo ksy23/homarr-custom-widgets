@@ -60,7 +60,7 @@ Open the widget's settings while in board **Edit Mode** to set your persistent d
 
 ## Screenshot
 
-![Tailscale Device List](tailscale-device-info-list.png)
+![Tailscale Device List](tailscale-devices-info-widget.png)
 
 ---
 

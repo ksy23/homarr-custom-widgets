@@ -103,4 +103,4 @@ Open the widget's settings while in board **Edit Mode** to configure defaults th
 
 ## Screenshot
 
-![Wireguard Peer List](wireguard-peer-list.png)
+![Wireguard Peer List](wireguard-peers-widget.png)
