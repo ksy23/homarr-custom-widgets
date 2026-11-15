@@ -95,3 +95,22 @@ For the **Connected Clients Table** and **Mesh Nodes Health Table**, you can use
 | **Connected Clients** | `Default Sort Order` | `asc`, `desc` | `desc` |
 | **Mesh Nodes** | `Default Sort Column` | `name`, `role`, `ip`, `clients`, `status` | `role` |
 | **Mesh Nodes** | `Default Sort Order` | `asc`, `desc` | `asc` |
+
+---
+
+## Screenshots
+
+### Deco Internet Overview
+![Deco Internet Overview](deco-internet-overview-widget.png)
+
+### Deco Nodes Health
+![Deco Nodes Health](deco-nodes-health-widget.png)
+
+### Deco Clients Table 
+![Deco Clients Table](deco-clients-table-widget.png)
+
+---
+
+## Notes
+
+Deco doesn't have an API (for the model I have), so all data has to be scrapped through WebUI.  Deco also limits 1 login at a time, so if you have an exporter running at a faster frequency, you might have issues when trying to login to admin portal (via web or app).  If there's a better way - I wanna know!
