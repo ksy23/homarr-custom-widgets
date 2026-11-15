@@ -1,7 +1,7 @@
 {
   "$schema": "homarr-custom-widget-v2",
   "name": "TP-Link Deco Internet & Bandwidth Chart",
-  "description": "Displays dynamic Deco model, online status, live download/upload bandwidth with sparkline graphs, connected clients, CPU, memory, and firmware status.",
+  "description": "Displays dynamic Deco model, online status, live total download/upload bandwidth with 5m/10s sparkline graphs, connected clients, CPU, memory, and firmware status.",
   "iconUrl": "https://cdn.jsdelivr.net/gh/loganmarchione/homelab-svg-assets//assets/tplink.svg",
   "sources": {
     "default": {
@@ -37,7 +37,33 @@
       "trigger": "load",
       "auth": "inherit",
       "permission": "view",
-      "cacheSeconds": 30
+      "cacheSeconds": 5
+    },
+    "rxNow": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": {
+        "query": "deco_total_rx_bytes_per_second"
+      },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 5
+    },
+    "txNow": {
+      "source": "default",
+      "kind": "query",
+      "method": "GET",
+      "path": "/api/v1/query",
+      "query": {
+        "query": "deco_total_tx_bytes_per_second"
+      },
+      "trigger": "load",
+      "auth": "inherit",
+      "permission": "view",
+      "cacheSeconds": 5
     },
     "rxHistory": {
       "source": "default",
@@ -45,12 +71,12 @@
       "method": "GET",
       "path": "/api/v1/query",
       "query": {
-        "query": "sum(deco_client_rx_bytes_per_second)[30m:1m]"
+        "query": "deco_total_rx_bytes_per_second[5m:10s]"
       },
       "trigger": "load",
       "auth": "inherit",
       "permission": "view",
-      "cacheSeconds": 30
+      "cacheSeconds": 5
     },
     "txHistory": {
       "source": "default",
@@ -58,12 +84,12 @@
       "method": "GET",
       "path": "/api/v1/query",
       "query": {
-        "query": "sum(deco_client_tx_bytes_per_second)[30m:1m]"
+        "query": "deco_total_tx_bytes_per_second[5m:10s]"
       },
       "trigger": "load",
       "auth": "inherit",
       "permission": "view",
-      "cacheSeconds": 30
+      "cacheSeconds": 5
     },
     "clients": {
       "source": "default",
@@ -76,7 +102,7 @@
       "trigger": "load",
       "auth": "inherit",
       "permission": "view",
-      "cacheSeconds": 30
+      "cacheSeconds": 10
     },
     "nodesOnline": {
       "source": "default",
@@ -89,7 +115,7 @@
       "trigger": "load",
       "auth": "inherit",
       "permission": "view",
-      "cacheSeconds": 30
+      "cacheSeconds": 10
     },
     "nodesTotal": {
       "source": "default",
@@ -115,7 +141,7 @@
       "trigger": "load",
       "auth": "inherit",
       "permission": "view",
-      "cacheSeconds": 30
+      "cacheSeconds": 5
     },
     "mem": {
       "source": "default",
@@ -128,7 +154,7 @@
       "trigger": "load",
       "auth": "inherit",
       "permission": "view",
-      "cacheSeconds": 30
+      "cacheSeconds": 5
     },
     "fw": {
       "source": "default",
@@ -145,5 +171,5 @@
     }
   },
   "options": {},
-  "template": "<Stack gap=\"xs\" p=\"xs\" style={{ height: \"100%\", overflow: \"auto\" }}><Group justify=\"space-between\" wrap=\"nowrap\"><Group gap={6} wrap=\"nowrap\"><TablerIcon name=\"router\" size={18} /><Text fw={700} size=\"md\">TP-Link Deco {data.device?.data?.result?.at(0)?.metric?.model || \"Mesh\"}</Text></Group><Group gap={6} wrap=\"nowrap\"><Badge variant=\"dot\" color={Number(data.internet?.data?.result?.at(0)?.value?.at(1) ?? 0) === 1 ? \"green\" : \"red\"} size=\"sm\">{Number(data.internet?.data?.result?.at(0)?.value?.at(1) ?? 0) === 1 ? \"Online\" : \"Offline\"}</Badge><RefreshButton requestId=\"rxHistory\" size=\"xs\" /></Group></Group><SimpleGrid cols={2} spacing=\"xs\"><Paper withBorder p=\"xs\" radius=\"sm\" style={{ position: \"relative\", overflow: \"hidden\", minHeight: \"92px\" }}><Box style={{ position: \"absolute\", left: 0, right: 0, bottom: 0, height: \"56px\", zIndex: 0, opacity: 0.35, pointerEvents: \"none\" }}><Sparkline w=\"100%\" h={56} data={(data.rxHistory?.data?.result?.at(0)?.values ?? []).map((v) => Number(v.at(1) ?? 0))} curveType=\"monotone\" color=\"teal\" fillOpacity={0.5} strokeWidth={2} /></Box><Stack gap={2} style={{ position: \"relative\", zIndex: 10 }}><Text size=\"xs\" c=\"dimmed\" fw={600}>Download (Rx)</Text><Text fw={700} size=\"lg\" c=\"teal\">{Number(data.rxHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1) ?? 0) >= 1048576 ? (Number(data.rxHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1)) / 1048576).toFixed(2) + \" MB/s\" : Number(data.rxHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1) ?? 0) >= 1024 ? (Number(data.rxHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1)) / 1024).toFixed(1) + \" KB/s\" : Math.round(Number(data.rxHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1) ?? 0)) + \" B/s\"}</Text><Text size=\"xs\" c=\"dimmed\">{((Number(data.rxHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1) ?? 0) * 8) / 1000000).toFixed(2)} Mbps</Text></Stack></Paper><Paper withBorder p=\"xs\" radius=\"sm\" style={{ position: \"relative\", overflow: \"hidden\", minHeight: \"92px\" }}><Box style={{ position: \"absolute\", left: 0, right: 0, bottom: 0, height: \"56px\", zIndex: 0, opacity: 0.35, pointerEvents: \"none\" }}><Sparkline w=\"100%\" h={56} data={(data.txHistory?.data?.result?.at(0)?.values ?? []).map((v) => Number(v.at(1) ?? 0))} curveType=\"monotone\" color=\"blue\" fillOpacity={0.5} strokeWidth={2} /></Box><Stack gap={2} style={{ position: \"relative\", zIndex: 10 }}><Text size=\"xs\" c=\"dimmed\" fw={600}>Upload (Tx)</Text><Text fw={700} size=\"lg\" c=\"blue\">{Number(data.txHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1) ?? 0) >= 1048576 ? (Number(data.txHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1)) / 1048576).toFixed(2) + \" MB/s\" : Number(data.txHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1) ?? 0) >= 1024 ? (Number(data.txHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1)) / 1024).toFixed(1) + \" KB/s\" : Math.round(Number(data.txHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1) ?? 0)) + \" B/s\"}</Text><Text size=\"xs\" c=\"dimmed\">{((Number(data.txHistory?.data?.result?.at(0)?.values?.at(-1)?.at(1) ?? 0) * 8) / 1000000).toFixed(2)} Mbps</Text></Stack></Paper></SimpleGrid><SimpleGrid cols={4} spacing=\"xs\"><Paper withBorder p=\"xs\" radius=\"sm\"><Text size=\"xs\" c=\"dimmed\">Clients</Text><Text fw={700} size=\"md\">{Math.round(Number(data.clients?.data?.result?.at(0)?.value?.at(1) ?? 0))}</Text></Paper><Paper withBorder p=\"xs\" radius=\"sm\"><Text size=\"xs\" c=\"dimmed\">Nodes</Text><Text fw={700} size=\"md\">{Math.round(Number(data.nodesOnline?.data?.result?.at(0)?.value?.at(1) ?? 0))} / {Math.round(Number(data.nodesTotal?.data?.result?.at(0)?.value?.at(1) ?? 0))}</Text></Paper><Paper withBorder p=\"xs\" radius=\"sm\"><Text size=\"xs\" c=\"dimmed\">CPU</Text><Text fw={700} size=\"md\" c={Number(data.cpu?.data?.result?.at(0)?.value?.at(1) ?? 0) > 0.8 ? \"red\" : Number(data.cpu?.data?.result?.at(0)?.value?.at(1) ?? 0) > 0.5 ? \"yellow\" : \"green\"}>{Math.round(Number(data.cpu?.data?.result?.at(0)?.value?.at(1) ?? 0) * 100)}%</Text></Paper><Paper withBorder p=\"xs\" radius=\"sm\"><Text size=\"xs\" c=\"dimmed\">Memory</Text><Text fw={700} size=\"md\" c={Number(data.mem?.data?.result?.at(0)?.value?.at(1) ?? 0) > 0.85 ? \"red\" : Number(data.mem?.data?.result?.at(0)?.value?.at(1) ?? 0) > 0.65 ? \"yellow\" : \"green\"}>{Math.round(Number(data.mem?.data?.result?.at(0)?.value?.at(1) ?? 0) * 100)}%</Text></Paper></SimpleGrid><Group justify=\"space-between\" wrap=\"nowrap\"><Text size=\"xs\" c=\"dimmed\">Firmware Status</Text><Badge variant=\"light\" color={Number(data.fw?.data?.result?.at(0)?.value?.at(1) ?? 0) === 1 ? \"orange\" : \"green\"} size=\"sm\">{Number(data.fw?.data?.result?.at(0)?.value?.at(1) ?? 0) === 1 ? \"Update Available\" : \"Up to Date\"}</Badge></Group></Stack>"
+  "template": "<Stack gap=\"xs\" p=\"xs\" style={{ height: \"100%\", overflow: \"auto\" }}><Group justify=\"space-between\" wrap=\"nowrap\"><Group gap={6} wrap=\"nowrap\"><TablerIcon name=\"router\" size={18} /><Text fw={700} size=\"md\">TP-Link Deco {data.device?.data?.result?.[0]?.metric?.model || \"Mesh\"}</Text></Group><Group gap={6} wrap=\"nowrap\"><Badge variant=\"dot\" color={Number(data.internet?.data?.result?.[0]?.value?.[1] ?? 0) === 1 ? \"green\" : \"red\"} size=\"sm\">{Number(data.internet?.data?.result?.[0]?.value?.[1] ?? 0) === 1 ? \"Online\" : \"Offline\"}</Badge><RefreshButton requestId=\"rxNow\" size=\"xs\" /></Group></Group><SimpleGrid cols={2} spacing=\"xs\"><Paper withBorder p=\"xs\" radius=\"sm\" style={{ position: \"relative\", overflow: \"hidden\", minHeight: \"92px\" }}><Box style={{ position: \"absolute\", left: 0, right: 0, bottom: 0, height: \"56px\", zIndex: 0, opacity: 0.35, pointerEvents: \"none\" }}><Sparkline w=\"100%\" h={56} data={(data.rxHistory?.data?.result?.[0]?.values ?? []).map((v) => Number(v[1] ?? 0))} curveType=\"monotone\" color=\"teal\" fillOpacity={0.5} strokeWidth={2} /></Box><Stack gap={2} style={{ position: \"relative\", zIndex: 10 }}><Text size=\"xs\" c=\"dimmed\" fw={600}>Download (Rx)</Text><Text fw={700} size=\"lg\" c=\"teal\">{Number(data.rxNow?.data?.result?.[0]?.value?.[1] ?? 0) >= 1048576 ? (Number(data.rxNow?.data?.result?.[0]?.value?.[1]) / 1048576).toFixed(2) + \" MB/s\" : Number(data.rxNow?.data?.result?.[0]?.value?.[1] ?? 0) >= 1024 ? (Number(data.rxNow?.data?.result?.[0]?.value?.[1]) / 1024).toFixed(1) + \" KB/s\" : Math.round(Number(data.rxNow?.data?.result?.[0]?.value?.[1] ?? 0)) + \" B/s\"}</Text><Text size=\"xs\" c=\"dimmed\">{((Number(data.rxNow?.data?.result?.[0]?.value?.[1] ?? 0) * 8) / 1000000).toFixed(2)} Mbps</Text></Stack></Paper><Paper withBorder p=\"xs\" radius=\"sm\" style={{ position: \"relative\", overflow: \"hidden\", minHeight: \"92px\" }}><Box style={{ position: \"absolute\", left: 0, right: 0, bottom: 0, height: \"56px\", zIndex: 0, opacity: 0.35, pointerEvents: \"none\" }}><Sparkline w=\"100%\" h={56} data={(data.txHistory?.data?.result?.[0]?.values ?? []).map((v) => Number(v[1] ?? 0))} curveType=\"monotone\" color=\"blue\" fillOpacity={0.5} strokeWidth={2} /></Box><Stack gap={2} style={{ position: \"relative\", zIndex: 10 }}><Text size=\"xs\" c=\"dimmed\" fw={600}>Upload (Tx)</Text><Text fw={700} size=\"lg\" c=\"blue\">{Number(data.txNow?.data?.result?.[0]?.value?.[1] ?? 0) >= 1048576 ? (Number(data.txNow?.data?.result?.[0]?.value?.[1]) / 1048576).toFixed(2) + \" MB/s\" : Number(data.txNow?.data?.result?.[0]?.value?.[1] ?? 0) >= 1024 ? (Number(data.txNow?.data?.result?.[0]?.value?.[1]) / 1024).toFixed(1) + \" KB/s\" : Math.round(Number(data.txNow?.data?.result?.[0]?.value?.[1] ?? 0)) + \" B/s\"}</Text><Text size=\"xs\" c=\"dimmed\">{((Number(data.txNow?.data?.result?.[0]?.value?.[1] ?? 0) * 8) / 1000000).toFixed(2)} Mbps</Text></Stack></Paper></SimpleGrid><SimpleGrid cols={4} spacing=\"xs\"><Paper withBorder p=\"xs\" radius=\"sm\"><Text size=\"xs\" c=\"dimmed\">Clients</Text><Text fw={700} size=\"md\">{Math.round(Number(data.clients?.data?.result?.[0]?.value?.[1] ?? 0))}</Text></Paper><Paper withBorder p=\"xs\" radius=\"sm\"><Text size=\"xs\" c=\"dimmed\">Nodes</Text><Text fw={700} size=\"md\">{Math.round(Number(data.nodesOnline?.data?.result?.[0]?.value?.[1] ?? 0))} / {Math.round(Number(data.nodesTotal?.data?.result?.[0]?.value?.[1] ?? 0))}</Text></Paper><Paper withBorder p=\"xs\" radius=\"sm\"><Text size=\"xs\" c=\"dimmed\">CPU</Text><Text fw={700} size=\"md\" c={Number(data.cpu?.data?.result?.[0]?.value?.[1] ?? 0) > 0.8 ? \"red\" : Number(data.cpu?.data?.result?.[0]?.value?.[1] ?? 0) > 0.5 ? \"yellow\" : \"green\"}>{Math.round(Number(data.cpu?.data?.result?.[0]?.value?.[1] ?? 0) * 100)}%</Text></Paper><Paper withBorder p=\"xs\" radius=\"sm\"><Text size=\"xs\" c=\"dimmed\">Memory</Text><Text fw={700} size=\"md\" c={Number(data.mem?.data?.result?.[0]?.value?.[1] ?? 0) > 0.85 ? \"red\" : Number(data.mem?.data?.result?.[0]?.value?.[1] ?? 0) > 0.65 ? \"yellow\" : \"green\"}>{Math.round(Number(data.mem?.data?.result?.[0]?.value?.[1] ?? 0) * 100)}%</Text></Paper></SimpleGrid><Group justify=\"space-between\" wrap=\"nowrap\"><Text size=\"xs\" c=\"dimmed\">Firmware Status</Text><Badge variant=\"light\" color={Number(data.fw?.data?.result?.[0]?.value?.[1] ?? 0) === 1 ? \"orange\" : \"green\"} size=\"sm\">{Number(data.fw?.data?.result?.[0]?.value?.[1] ?? 0) === 1 ? \"Update Available\" : \"Up to Date\"}</Badge></Group></Stack>"
 }
