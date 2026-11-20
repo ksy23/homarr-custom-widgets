@@ -9,6 +9,7 @@ A suite of three custom widgets for **Homarr v2** built using the `homarr-custom
 | **1. Internet & Bandwidth Overview** | [`deco-internet-overview-widget.json`](./deco-internet-overview-widget.json) | Dynamically displays your Deco model name, IPv4/IPv6 internet online status, live total Download/Upload speeds (`MB/s` + `Mbps`) with 5-minute (`10s` step) background sparkline charts, total connected clients, online mesh nodes, CPU/Memory load, and firmware update status. |
 | **2. Connected Clients Table** | [`deco-clients-table-widget.json`](./deco-clients-table-widget.json) | Displays every connected client's `name`, `ip`, color-coded Wi-Fi `band` (`6 GHz`, `5 GHz`, `2.4 GHz`), live `rx_speed`, live `tx_speed`, and `status` (`Online`/`Offline`) at `14px` font with live + persistent sorting. |
 | **3. Mesh Nodes Health Table** | [`deco-nodes-health-widget.json`](./deco-nodes-health-widget.json) | Displays each Deco unit's `name`, `role` (`Main` vs. `Satellite`), `ip`, `backhaul` bands, per-node `clients` count, `signal (2G / 5G)` strength, and `status` at `14px` font with live + persistent sorting. |
+| **4. Deco Data Usage** | [`deco-data-usage-widget.json`](./deco-data-usage-widget.json) | Displays Deco's total data usage with `Total Download`, `Total Upload` and `Total Combined`. Pre-set time period of 1h, 24h, 7d and 30d. |
 
 ---
 
@@ -70,6 +71,7 @@ scrape_configs:
    * `deco-internet-overview-widget.json`
    * `deco-clients-table-widget.json`
    * `deco-nodes-health-widget.json`
+   * `deco-data-usage-widget.json`
 3. For each imported widget, click **Actions (⋮) → Configure sources** and update `http://prometheus:9090` to your Prometheus server URL.
 4. Enter **Edit Mode** on your Homarr dashboard, click **Add item → Widget**, and place the widgets on your board.
 
@@ -102,5 +104,8 @@ By default, **Widget 1** uses `cacheSeconds: 5` on live speed and status request
 
 ### Deco Clients Table 
 ![Deco Clients Table](deco-clients-table-widget.png)
+
+### Deco Data Usage 
+![Deco Data Usage](deco-data-usage-widget.png)
 
 ---
